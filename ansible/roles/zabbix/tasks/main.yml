@@ -6,9 +6,9 @@
     group: vagrant
     mode: '0644'
 
-- name: Plantilla de .env para docker-compose
+- name: Crear archivo .env para docker-compose
   copy:
-    dest: /home/vagrant/.zabbix_env
+    dest: /home/vagrant/.env
     content: |
       MYSQL_ROOT_PASSWORD={{ mysql_root_password }}
       MYSQL_DATABASE={{ mysql_database }}
@@ -27,22 +27,34 @@
     group: vagrant
     mode: '0755'
 
-- name: Instalar docker-compose (si no existe) - se repite seguridad
-  pip:
-    name: docker-compose
-    state: present
-
+- name: Verificar que Docker esté funcionando para vagrant
+  become: true
+  shell: |
+    # Reiniciar sesión del usuario vagrant para aplicar grupo docker
+    systemctl restart docker
+    sleep 3
+    # Ejecutar docker como vagrant usando newgrp
+    su - vagrant -c "newgrp docker; docker info"
+  register: docker_check
+  changed_when: false
+  
 - name: Levantar servicios con docker-compose
   become: true
-  become_user: vagrant
   shell: |
     set -e
     cd /home/vagrant
-    export MYSQL_ROOT_PASSWORD={{ mysql_root_password }}
-    export MYSQL_DATABASE={{ mysql_database }}
-    export MYSQL_USER={{ mysql_user }}
-    export MYSQL_PASSWORD={{ mysql_password }}
-    export ZABBIX_VERSION={{ zabbix_version }}
-    docker-compose -f zabbix-docker-compose.yml up -d
-  args:
-    creates: /var/lib/docker/volumes
+    # Verificar que Docker funcione antes de continuar
+    su - vagrant -c "newgrp docker; docker info > /dev/null"
+    # Ejecutar docker compose como vagrant
+    su - vagrant -c "cd /home/vagrant && newgrp docker; docker compose -f zabbix-docker-compose.yml up -d"
+  register: compose_result
+  
+- name: Mostrar estado de los contenedores
+  become: true
+  shell: su - vagrant -c "newgrp docker; docker ps"
+  register: containers_status
+  changed_when: false
+
+- name: Debug - mostrar contenedores
+  debug:
+    msg: "{{ containers_status.stdout_lines }}"

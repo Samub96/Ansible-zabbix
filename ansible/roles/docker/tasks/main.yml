@@ -12,6 +12,8 @@
       - gnupg
       - lsb-release
       - python3-pip
+      - snmp
+      - snmp-mibs-downloader
     state: present
 
 - name: Agregar la llave oficial de Docker
@@ -32,13 +34,36 @@
       - containerd.io
     state: latest
 
-- name: Instalar docker-compose via pip (simple en lab)
-  pip:
-    name: docker-compose
-    state: present
+- name: Instalar docker-compose-plugin (V2)
+  apt:
+    name: docker-compose-plugin
+    state: latest
+
+- name: Crear symlink para docker-compose (compatibilidad V1)
+  file:
+    src: /usr/libexec/docker/cli-plugins/docker-compose
+    dest: /usr/local/bin/docker-compose
+    state: link
+    force: yes
+  ignore_errors: yes
 
 - name: Añadir usuario vagrant al grupo docker
   user:
     name: vagrant
     groups: docker
     append: yes
+
+- name: Reiniciar servicio docker
+  systemd:
+    name: docker
+    state: restarted
+    enabled: yes
+
+- name: Asegurar que el socket de Docker tenga permisos correctos
+  file:
+    path: /var/run/docker.sock
+    group: docker
+    mode: '0660'
+
+- name: Reset ssh connection para aplicar cambios de grupo
+  meta: reset_connection

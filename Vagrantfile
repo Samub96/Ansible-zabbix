@@ -7,6 +7,9 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 80, host: 8080
   config.vm.network "forwarded_port", guest: 10051, host: 10051
   config.vm.network "forwarded_port", guest: 443, host: 8443
+  
+  # Red bridge para acceso a la red física
+  config.vm.network "public_network", bridge: "auto", ip: "192.168.173.20"
 
   # Recursos
   config.vm.provider "virtualbox" do |vb|
@@ -23,5 +26,6 @@ Vagrant.configure("2") do |config|
     ansible.inventory_path = "/vagrant_ansible/inventory.ini"
     ansible.install = true
     ansible.verbose = true
+    ansible.limit   = "all"
   end
 end

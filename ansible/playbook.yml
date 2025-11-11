@@ -1,0 +1,8 @@
+- name: Provision Zabbix lab
+  hosts: zabbix
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - docker
+    - zabbix

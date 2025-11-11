@@ -1,0 +1,7 @@
+---
+# Variables globales
+zabbix_version: "6.4"
+mysql_root_password: "changeme123"
+mysql_database: "zabbix"
+mysql_user: "zabbix"
+mysql_password: "zabbix_pass"
